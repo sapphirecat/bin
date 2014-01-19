@@ -1,0 +1,111 @@
+#!/bin/sh
+
+# _vmconnect: starting/connecting to VirtualBox guests
+# Copyright (C) 2014  Sapphire Paw <https://github.com/sapphirecat>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, version 3.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+set -e
+
+DEFAULT_VM=ubuntu
+VERSION='1.0.0'
+
+# when starting a machine: wait $PRE_SSH_WAIT*$STEP seconds before starting to
+# check whether SSH is up.  Wait up to $SSH_WAIT*$STEP seconds, checking each
+# time, for SSH to come up after that before assuming the VM is hung and
+# failing.
+PRE_SSH_WAIT=6
+SSH_WAIT=30
+STEP=2
+
+if [ $# -gt 0 ] ; then
+	case "$1" in
+	-h|--help) cat <<EOF
+_vmconnect $VERSION
+
+Connects to a VirtualBox VM.  If it is not already running, it will be started
+headlessly and allowed to boot.
+
+Usage: _vmconnect [vm_name] [ssh_name]
+
+vm_name:  Name of a VirtualBox machine to start; defaults to $DEFAULT_VM
+ssh_name: Hostname or IP of the machine to connect; defaults to the vm_name
+  (See also: Host and HostName in ssh_config(5).)
+
+EOF
+		exit 0 ;;
+
+	-v|--version) echo "_vmconnect $VERSION"
+		exit 0 ;;
+
+	*) VM="$1" ;;
+	esac
+
+else
+	VM="$DEFAULT_VM"
+fi
+
+if [ $# -gt 1 ] ; then
+	SSH_NAME="$2"
+else
+	SSH_NAME="$VM"
+fi
+
+
+logdir="${HOME}/VirtualBox VMs"
+if [ ! -d "$logdir" ] ; then
+	logdir="${HOME}"
+fi
+
+die() {
+	rc="$1"
+	shift
+	echo "$@" >&2
+	return "$rc"
+}
+
+start_vm() {
+	VBoxHeadless -s "$1" >"$logdir/headless.log" 2>&1 </dev/null &
+
+	printf "Booting $1"
+	ctr=$PRE_SSH_WAIT
+	while [ $ctr -gt 0 ] ; do
+		sleep $STEP
+		printf "."
+		ctr=$(( $ctr - 1 ))
+	done
+
+	ctr=$SSH_WAIT
+	up=""
+	while [ $ctr -gt 0 ] ; do
+		preTS=`date +%Y%m%d%H%M%S`
+		up=`ssh -o "ConnectTimeout $STEP" "$2" uptime 2>/dev/null || true`
+		[ "x$up" = x ] || break
+
+		printf ":"
+		# if the vm quickly refuses the connection, we still want the delay
+		delta=$(( `date +%Y%m%d%H%M%S` - $preTS ))
+		[ "$delta" -ge $STEP ] || sleep $(( $STEP - $delta ))
+
+		ctr=$(( $ctr - 1 ))
+	done
+
+	echo
+	[ "x$up" != x ] || die 3 "Tired of waiting for VM to boot: $1"
+}
+
+
+VBoxManage list runningvms | grep "^\"$VM\"" >/dev/null 2>&1 \
+	|| start_vm "$VM" "$SSH_NAME"
+
+exec ssh "$SSH_NAME"
