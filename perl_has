@@ -1,0 +1,35 @@
+#!/usr/bin/env perl
+
+# perl_has: display installed state of listed perl modules
+# Copyright (C) 2012  Sapphire Cat <https://github.com/sapphirecat>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, version 3.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+use strict;
+use warnings;
+
+my $ANSI = {
+	ok =>  "\e[32m",
+	fail => "\e[1;33m",
+	reset => "\e[0m",
+};
+
+show_mod($_) foreach sort @ARGV;
+
+sub show_mod {
+	my ($mod) = @_;
+	my $ok = eval qq{require $mod;};
+	my $color = ($ok ? $ANSI->{ok} : $ANSI->{fail});
+	print "$color$mod: ", ($ok ? "ok" : "MISSING"), "$ANSI->{reset}\n";
+}
+

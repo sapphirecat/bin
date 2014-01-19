@@ -2,6 +2,13 @@
 
 Random personal scripts that may be helpful
 
+## perl_has
+
+Shows whether the Perl modules named on the command line are available in the
+current installation.  Example:
+
+    perl_has Date::Parse LWP::UserAgent
+
 ## _vmconnect
 
 Connects to a VirtualBox guest.  If the guest isn’t running, it will be
