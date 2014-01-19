@@ -1,7 +1,7 @@
 #!/bin/sh
 
 # _vmconnect: starting/connecting to VirtualBox guests
-# Copyright (C) 2014  Sapphire Paw <https://github.com/sapphirecat>
+# Copyright (C) 2014  Sapphire Cat <https://github.com/sapphirecat>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
