@@ -18,7 +18,7 @@
 set -e
 
 DEFAULT_VM=ubuntu
-VERSION='1.0.0'
+VERSION='1.0.1'
 
 # when starting a machine: wait $PRE_SSH_WAIT*$STEP seconds before starting to
 # check whether SSH is up.  Wait up to $SSH_WAIT*$STEP seconds, checking each
@@ -85,14 +85,20 @@ start_vm() {
 		ctr=$(( $ctr - 1 ))
 	done
 
+	echo
+}
+
+wait_for_ssh() {
 	ctr=$SSH_WAIT
 	up=""
+
+	printf "Checking SSH reachability"
 	while [ $ctr -gt 0 ] ; do
 		preTS=`date +%Y%m%d%H%M%S`
-		up=`ssh -o "ConnectTimeout $STEP" "$2" uptime 2>/dev/null || true`
+		up=`ssh -o "ConnectTimeout $STEP" "$1" uptime 2>/dev/null || true`
 		[ "x$up" = x ] || break
 
-		printf ":"
+		printf "."
 		# if the vm quickly refuses the connection, we still want the delay
 		delta=$(( `date +%Y%m%d%H%M%S` - $preTS ))
 		[ "$delta" -ge $STEP ] || sleep $(( $STEP - $delta ))
@@ -101,11 +107,12 @@ start_vm() {
 	done
 
 	echo
-	[ "x$up" != x ] || die 3 "Tired of waiting for VM to boot: $1"
+	[ "x$up" != x ] || die 3 "Timeout waiting for SSH: $1"
 }
 
 
 VBoxManage list runningvms | grep "^\"$VM\"" >/dev/null 2>&1 \
-	|| start_vm "$VM" "$SSH_NAME"
+	|| start_vm "$VM"
 
+wait_for_ssh "$SSH_NAME"
 exec ssh "$SSH_NAME"
