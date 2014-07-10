@@ -1,0 +1,94 @@
+#!/usr/bin/env perl
+
+use 5.010;
+use strict;
+use warnings;
+
+our $VERSION = '20140710.0';
+use constant {
+	DEFAULT_PATH => "$ENV{HOME}/git",
+	VERSION_FLAIR => '[github.com/sapphirecat/bin/activate]',
+};
+
+my %opt = (
+	bin => 1,
+	ext => ($^O =~ /^mswin/i ? '.bat' : ''),
+	path => $ENV{ACTIVATE_PATH} // DEFAULT_PATH,
+);
+
+use Config;
+use File::Basename qw(basename);
+use File::Spec::Functions qw(catfile);
+use Getopt::Long qw(GetOptions);
+
+
+sub self_name () {
+	basename($0);
+}
+
+sub usage (;$$) {
+	my ($code, $name, $defpath) = (0, self_name, DEFAULT_PATH);
+
+	if (@_) {
+		select STDERR;
+		$code = @_ > 1 ? $_[1] : 2;
+		print $_[0], "\n\n";
+	}
+
+	print <<HELP;
+Usage: $name [--no-bin] [--ext=EXTENSION] [--path=PATHSPEC] PROJECT [ARGS...]
+
+Runs the activate script in PROJECT, passing it args of ARGS.
+
+    --no-bin: Don't look for a bin/ folder within PROJECT first.
+    --ext=EXTENSION: Append EXTENSION to script name.  Default is ".bat" on
+	Windows, "" elsewhere.
+    --path=PATHSPEC: Search for projects in PATHSPEC.  Default is taken from
+	the ACTIVATE_PATH environment variable, or the built-in default:
+	$defpath
+
+HELP
+	exit $code;
+}
+
+sub version () {
+	my ($name) = (self_name);
+	say "$name version $VERSION ", VERSION_FLAIR;
+	exit 0;
+}
+
+
+sub maybe_exec ($$) {
+	my ($f, $args) = @_;
+	return unless -x $f;
+	exec $f ($f, @$args)
+		or die "Executable script $f failed to launch: $!";
+}
+
+
+GetOptions(\%opt,
+	'help|h',
+	'version|v',
+
+	'bin!',
+	'ext|x=s',
+	'path|p=s',
+);
+
+if (defined $opt{help}) {
+	usage();
+} elsif (defined $opt{version}) {
+	version();
+} elsif (! @ARGV) {
+	usage("No project was named to be activated.");
+}
+
+my @path = map { s/^$/./; s/^~/$ENV{HOME}/; $_ } split(/$Config{path_sep}/, $opt{path});
+my ($project, $script, $args) = (shift(@ARGV), "activate$opt{ext}", \@ARGV);
+for my $dir (@path) {
+	maybe_exec(catfile($dir, $project, 'bin', $script), $args) if $opt{bin};
+	maybe_exec(catfile($dir, $project, $script), $args);
+}
+
+die "Project $project not found in any of: @path";
+
