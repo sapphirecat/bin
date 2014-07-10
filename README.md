@@ -29,4 +29,4 @@ Of course, there’s also a port forwarded to the VM, and I added a block to
 
 # License
 
-All scripts are GPL v3 only.
+All scripts are GPL v3 or later.
