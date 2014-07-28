@@ -20,7 +20,7 @@ use 5.010;
 use strict;
 use warnings;
 
-our $VERSION = '20140710.0';
+our $VERSION = '20140725.0';
 use constant {
 	DEFAULT_PATH => "$ENV{HOME}/git",
 	VERSION_FLAIR => '[github.com/sapphirecat/bin/activate]',
@@ -34,7 +34,7 @@ my %opt = (
 
 use Config;
 use File::Basename qw(basename);
-use File::Spec::Functions qw(catfile);
+use File::Spec::Functions qw(catdir catfile splitdir);
 use Getopt::Long qw(GetOptions);
 
 
@@ -74,6 +74,45 @@ sub version () {
 }
 
 
+sub _win_home ($) {
+	my $spec = shift;
+	# we [and git bash 3.1.0] can't handle "~user" on windows
+	return $spec unless $spec eq '~';
+
+	no warnings 'uninitialized';
+	my $home = ($ENV{HOMESHARE} ?
+		join('', @ENV{qw(HOMESHARE HOMEPATH)}) :
+		join('', @ENV{qw(HOMEDRIVE HOMEPATH)}));
+
+	# if that didn't work, then assume the install is broken.
+	return $home || $spec;
+}
+
+sub _posix_home ($) {
+	my $spec = shift;
+
+	return $ENV{HOME} if $spec eq '~' && $ENV{HOME};
+
+	if ($spec = /^~([-.\w]+)$/) {
+		my @pwent = getpwnam($1);
+		return $pwent[7] if @pwent; # return $dir field
+	}
+
+	return $spec;
+}
+
+sub expand_home ($) {
+	my $raw = shift;
+	my @dirs = splitdir($raw);
+	return $raw unless @dirs && $dirs[0] =~ /^~/;
+
+	my ($lead, @home) = (shift @dirs);
+	@home = ($^O =~ /^MSWin/i ? _win_home($lead) : _posix_home($lead));
+
+	return catdir(@home, @dirs);
+}
+
+
 sub maybe_exec ($$) {
 	my ($f, $args) = @_;
 	return unless -x $f;
@@ -99,7 +138,7 @@ if (defined $opt{help}) {
 	usage("No project was named to be activated.");
 }
 
-my @path = map { s/^$/./; s/^~/$ENV{HOME}/; $_ } split(/$Config{path_sep}/, $opt{path});
+my @path = map { expand_home($_) } split(/$Config{path_sep}/, $opt{path});
 my ($project, $script, $args) = (shift(@ARGV), "activate$opt{ext}", \@ARGV);
 for my $dir (@path) {
 	maybe_exec(catfile($dir, $project, 'bin', $script), $args) if $opt{bin};
