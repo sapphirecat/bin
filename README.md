@@ -18,6 +18,23 @@ There is an option to specify the executable extension, that defaults to
 “.bat” on Windows or empty elsewhere.  This can be changed with e.g.
 `--ext=.exe` to search for and invoke `activate.exe` instead.
 
+The repository includes a sample “activate project” script for use with Perl
+projects on POSIX systems; it’s called `_activate-project` and, somewhat
+confusingly, should be installed inside the project being activated.  In other
+words:
+
+    cd THIS_REPO
+    cp -p _activate-project ~/git/foo/activate
+    ./activate foo
+
+This will (using the default paths) activate the project foo.  If you have a
+`~/lib/foo` directory, then it will be added to the environment as a
+`local::lib` path.  (I use this last feature to evaluate CPAN modules without
+polluting a ‘real’ installation.)
+
+`_activate-project` should be customized for your needs; for instance, to
+change your shell prompt to indicate that you’re inside the project.
+
 
 ## perl_has
 
