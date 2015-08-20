@@ -19,7 +19,8 @@
 set -e
 
 DEFAULT_VM=ubuntu
-VERSION='1.0.3'
+WITH_SSH_AGENT=
+VERSION='1.1.0'
 
 # when starting a machine: wait $PRE_SSH_WAIT*$STEP seconds before starting to
 # check whether SSH is up.  Wait up to $SSH_WAIT*$STEP seconds, checking each
@@ -113,9 +114,15 @@ wait_for_ssh() {
 	[ "x$up" != x ] || die 3 "Timeout waiting for SSH: $1"
 }
 
+[ "x$WITH_SSH_AGENT" = x ] || eval `ssh-agent`
 
 VBoxManage list runningvms | grep "^\"$VM\"" >/dev/null 2>&1 \
 	|| start_vm "$VM"
 
 wait_for_ssh "$SSH_NAME"
-exec ssh "$SSH_NAME"
+if [ "x$WITH_SSH_AGENT" != x ] ; then
+	ssh "$SSH_NAME"
+	eval `ssh-agent -k`
+else
+	exec ssh "$SSH_NAME"
+fi
