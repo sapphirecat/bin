@@ -36,7 +36,7 @@ polluting a ‘real’ installation.)
 change your shell prompt to indicate that you’re inside the project.
 
 
-## perl_has
+## perl\_has
 
 Shows whether the Perl modules named on the command line are available in the
 current installation.  Example:
@@ -48,7 +48,7 @@ current installation.  Example:
 Generates keys from `/dev/random`, and prints their base64 encoding.
 
 
-## _vmconnect
+## \_vmconnect
 
 Connects to a VirtualBox guest.  If the guest isn’t running, it will be
 started headlessly.
