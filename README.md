@@ -43,6 +43,10 @@ current installation.  Example:
 
     perl_has Date::Parse LWP::UserAgent
 
+## randbits
+
+Generates keys from `/dev/random`, and prints their base64 encoding.
+
 
 ## _vmconnect
 

@@ -1,0 +1,38 @@
+#!/bin/sh
+
+# randbits: generate an encoded key of at least N bits
+# Copyright (C) 2016  Sapphire Cat <https://github.com/sapphirecat>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+set -eu
+
+# It's hard to pull _exact_ bits, so we end up rounding up to the next byte.
+bytelen=`expr \( "${1-128}" + 7 \) / 8`
+bits=`dd if=/dev/urandom bs=1 count=$bytelen 2>/dev/null`
+
+# okay, we've got the randomness, now let's encode it.
+if command -v base64 >/dev/null 2>&1 ; then
+	printf "%s" "$bits" | base64
+	exit $?
+# TODO: python and php versions
+elif command -v perl >/dev/null 2>&1 ; then
+	if perl -MMIME::Base64 -e1 2>/dev/null ; then
+		printf "%s" "$bits" | perl -MMIME::Base64 -e '$/=undef; print encode_base64(<STDIN>);'
+		exit $?
+	fi
+fi
+
+echo "Failed to find a usable encoder." >&2
+exit 1
