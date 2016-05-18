@@ -29,8 +29,14 @@ show_mod($_) foreach sort @ARGV;
 
 sub show_mod {
 	my ($mod) = @_;
-	my $ok = eval qq{require $mod;};
-	my $color = ($ok ? $ANSI->{ok} : $ANSI->{fail});
-	print "$color$mod: ", ($ok ? "ok" : "MISSING"), "$ANSI->{reset}\n";
+	my $v = eval qq{require $mod; \$${mod}::VERSION || 'ok';};
+	my $color;
+	if ($v) {
+		$color = $ANSI->{ok};
+	} else {
+		$color = $ANSI->{fail};
+		$v = 'MISSING';
+	}
+	print "$color$mod: $v$ANSI->{reset}\n";
 }
 
