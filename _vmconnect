@@ -127,7 +127,7 @@ cleanup_ssh_state() {
 	[ -z "$WITH_SSH_KEY" ] || ssh-add -d "$WITH_SSH_KEY"
 }
 
-trap EXIT cleanup_ssh_state
+trap cleanup_ssh_state EXIT
 setup_ssh_state
 
 VBoxManage list runningvms | grep -q "^\"$VM\"" \
