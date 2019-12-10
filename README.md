@@ -66,6 +66,20 @@ Of course, there’s also a port forwarded to the VM, and I added a block to
     Port 9222
     User ubuntu
 
+Version 1.2.0-dev and later offer control over some defaults through the
+environment, rather than hard-coding them into the script:
+
+    VMCONNECT_VM          - VirtualBox VM name to start
+    VMCONNECT_START_AGENT - non-empty to start a fresh SSH agent
+    VMCONNECT_SSH_KEY     - key to load into the/an agent
+    VMCONNECT_INIT_WAIT   - steps to wait for a VM to boot
+    VMCONNECT_SSH_WAIT    - steps to wait for ssh to connect
+    VMCONNECT_STEP        - delay between init/ssh countdown
+
+Defaults are “ubuntu” VM, and no agent/key operations.  The default step is 2,
+which means that the default init wait of 6 allows 12 seconds for a VM to boot
+before trying to connect, and the default ssh wait of 30 will wait 60 (more)
+seconds for the VM to become reachable.
 
 # License
 
