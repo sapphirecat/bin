@@ -20,7 +20,7 @@ set -e
 
 DEFAULT_VM=ubuntu
 WITH_SSH_AGENT=
-VERSION='1.1.0'
+VERSION='1.1.1'
 
 # when starting a machine: wait $PRE_SSH_WAIT*$STEP seconds before starting to
 # check whether SSH is up.  Wait up to $SSH_WAIT*$STEP seconds, checking each
@@ -81,7 +81,7 @@ start_vm() {
 	[ ! -e "$logfile" ] || mv -f "$logfile" "${logfile}.old"
 	nohup VBoxHeadless -s "$1" >"$logfile" 2>&1 </dev/null &
 
-	printf "Booting $1"
+	printf "Booting %s" "$1"
 	ctr=$PRE_SSH_WAIT
 	while [ $ctr -gt 0 ] ; do
 		sleep $STEP
