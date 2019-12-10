@@ -20,7 +20,7 @@ set -e
 
 DEFAULT_VM=ubuntu
 WITH_SSH_AGENT=
-VERSION='1.1.1'
+VERSION='1.1.2'
 
 # when starting a machine: wait $PRE_SSH_WAIT*$STEP seconds before starting to
 # check whether SSH is up.  Wait up to $SSH_WAIT*$STEP seconds, checking each
@@ -86,43 +86,43 @@ start_vm() {
 	while [ $ctr -gt 0 ] ; do
 		sleep $STEP
 		printf "."
-		ctr=$(( $ctr - 1 ))
+		ctr=$(( ctr - 1 ))
 	done
 
 	echo
 }
 
 wait_for_ssh() {
-	ctr=$SSH_WAIT
+	ctr="$SSH_WAIT"
 	up=""
 
 	printf "Checking SSH reachability"
 	while [ $ctr -gt 0 ] ; do
-		preTS=`date +%Y%m%d%H%M%S`
-		up=`ssh -o "ConnectTimeout $STEP" "$1" uptime 2>/dev/null || true`
+		preTS="$(date +%Y%m%d%H%M%S)"
+		up="$(ssh -o "ConnectTimeout $STEP" "$1" uptime 2>/dev/null || true)"
 		[ "x$up" = x ] || break
 
 		printf "."
 		# if the vm quickly refuses the connection, we still want the delay
-		delta=$(( `date +%Y%m%d%H%M%S` - $preTS ))
-		[ "$delta" -ge $STEP ] || sleep $(( $STEP - $delta ))
+		delta=$(( $(date +%Y%m%d%H%M%S) - preTS ))
+		[ "$delta" -ge $STEP ] || sleep $(( STEP - delta ))
 
-		ctr=$(( $ctr - 1 ))
+		ctr=$(( ctr - 1 ))
 	done
 
 	echo
 	[ "x$up" != x ] || die 3 "Timeout waiting for SSH: $1"
 }
 
-[ "x$WITH_SSH_AGENT" = x ] || eval `ssh-agent`
+[ "x$WITH_SSH_AGENT" = x ] || eval "$(ssh-agent)"
 
-VBoxManage list runningvms | grep "^\"$VM\"" >/dev/null 2>&1 \
+VBoxManage list runningvms | grep -q "^\"$VM\"" \
 	|| start_vm "$VM"
 
 wait_for_ssh "$SSH_NAME"
 if [ "x$WITH_SSH_AGENT" != x ] ; then
 	ssh "$SSH_NAME"
-	eval `ssh-agent -k`
+	eval "$(ssh-agent -k)"
 else
 	exec ssh "$SSH_NAME"
 fi
