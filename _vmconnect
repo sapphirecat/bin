@@ -84,8 +84,8 @@ start_vm() {
 
 	printf "Letting %s boot up" "$1"
 	ctr=$PRE_SSH_WAIT
-	while [ $ctr -gt 0 ] ; do
-		sleep $STEP
+	while [ "$ctr" -gt 0 ] ; do
+		sleep "$STEP"
 		printf "."
 		ctr=$(( ctr - 1 ))
 	done
@@ -97,7 +97,7 @@ wait_for_ssh() {
 	ctr="$SSH_WAIT"
 
 	printf "Checking SSH reachability"
-	while [ $ctr -gt 0 ] ; do
+	while [ "$ctr" -gt 0 ] ; do
 		preTS="$(date +%Y%m%d%H%M%S)"
 		if ssh -n -o "ConnectTimeout $STEP" "$1" true </dev/null 2>/dev/null
 		then
@@ -109,7 +109,7 @@ wait_for_ssh() {
 		printf "."
 		# if the vm quickly refuses the connection, we still want the delay
 		delta=$(( $(date +%Y%m%d%H%M%S) - preTS ))
-		[ "$delta" -ge $STEP ] || sleep $(( STEP - delta ))
+		[ "$delta" -ge "$STEP" ] || sleep $(( STEP - delta ))
 
 		ctr=$(( ctr - 1 ))
 	done
