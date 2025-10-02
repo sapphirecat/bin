@@ -1,7 +1,7 @@
 #!/bin/sh
 
 # _vmconnect: starting/connecting to VirtualBox 7.x guests
-# Copyright (C) 2014,2019,2022  Sapphire Cat <https://github.com/sapphirecat>
+# Copyright (C) 2014,2019,2022,2025  Sapphire Cat <https://github.com/sapphirecat>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -21,7 +21,8 @@ set -e
 DEFAULT_VM="${VMCONNECT_VM-ubuntu}"
 WITH_SSH_AGENT="${VMCONNECT_START_AGENT-}"
 WITH_SSH_KEY="${VMCONNECT_SSH_KEY-}"
-VERSION='1.2.1-dev'
+VERSION='1.2.2'
+HOLD_ON_FAILURE="${VMCONNECT_HOLD_ON_FAILURE:-0}"
 
 # when starting a machine: wait $PRE_SSH_WAIT*$STEP seconds before starting to
 # check whether SSH is up.  Wait up to $SSH_WAIT*$STEP seconds, checking each
@@ -39,11 +40,23 @@ _vmconnect $VERSION
 Connects to a VirtualBox VM.  If it is not already running, it will be started
 headlessly and allowed to boot.
 
-Usage: _vmconnect [vm_name] [ssh_name]
+Usage: _vmconnect [vm_name [ssh_name]]
 
 vm_name:  Name of a VirtualBox machine to start; defaults to $DEFAULT_VM
 ssh_name: Hostname or IP of the machine to connect; defaults to the vm_name
   (See also: Host and HostName in ssh_config(5).)
+
+Environment variables providing configuration:
+
+VMCONNECT_HOLD_ON_FAILURE=1: Pause if starting the VM fails
+VMCONNECT_VM=hostname: Default vm_name to start, if none given
+VMCONNECT_START_AGENT=non_empty: Start an SSH agent in the current session, if
+  none is already configured
+VMCONNECT_SSH_KEY=file_path: If set, load the given key into the SSH agent
+
+VMCONNECT_INIT_WAIT=10: Timeout between starting a VM and trying SSH
+VMCONNECT_SSH_WAIT, VMCONNECT_STEP=1: Overall timeout and delay between
+  attempts, respectively, when attempting SSH connection
 
 EOF
 		exit 0 ;;
@@ -78,9 +91,22 @@ die() {
 	return "$rc"
 }
 
+_really_start_vm() {
+	VBoxManage startvm "$1" --type headless
+}
+
 start_vm() {
 	[ ! -e "$logfile" ] || mv -f "$logfile" "${logfile}.old"
-	VBoxManage startvm "$1" --type headless
+	if [ "$HOLD_ON_FAILURE" != '0' ] ; then
+		if ! _really_start_vm "$1" ; then
+			echo 'VM failed to start!  Press ENTER to continue...' >&2
+			# shellcheck disable=SC2034 # only the side effect of pausing is desired
+			read -r unused
+			exit 1
+		fi
+	else
+		_really_start_vm "$1" || die "$?" 'VM failed to start'
+	fi
 
 	printf "Letting %s boot up" "$1"
 	ctr=$PRE_SSH_WAIT
